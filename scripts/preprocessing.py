@@ -2,6 +2,24 @@ import pandas as pd
 import numpy as np
 import scipy.stats
 from scipy.stats import zscore
+import os
+
+def save_insurance_data_to_csv(text_file_path, csv_file_name='insurance_data.csv'):
+    """Load insurance data from a text file and save it as a CSV."""
+    # Read the text file into a DataFrame
+    df = pd.read_csv(text_file_path, delimiter='|')
+    
+    # Create the path for the 'data' folder one level up
+    data_folder = os.path.abspath(os.path.join(os.getcwd(), '..', 'data'))
+    os.makedirs(data_folder, exist_ok=True)  # Create 'data' folder if it doesn't exist
+
+    # Define the full path for the CSV file
+    csv_file_path = os.path.join(data_folder, csv_file_name)
+    
+    # Save the DataFrame to a CSV file
+    df.to_csv(csv_file_path, index=False)
+
+    print(f"Data saved to {csv_file_path}")
 
 def remove_columns(df, columns_to_remove):
     
@@ -72,16 +90,6 @@ def handle_missing_categorical(df, columns, fill_value='Unknown'):
             print(f"Missing values in categorical column '{column}' filled with '{fill_value}'")
     return df
 
-def convert_bytes_to_megabytes(df, columns):
-
-    megabyte = 1 * 10e+5
-    
-    for column in columns:
-        if column in df.columns:
-            df[column] = df[column] / megabyte
-    return df
-
-
 def fix_outlier(df, columns):
     
     for column in columns:
@@ -117,15 +125,78 @@ def remove_outliers(df, columns_to_process, z_threshold=3):
 
 # Function to identify categorical columns in a DataFrame
 def get_categorical_columns(df):
-    categorical_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    categorical_columns = df.select_dtypes(include=['object', 'category','bool']).columns.tolist()
     return categorical_columns
 
+# # Function to get unique values and their counts from categorical columns
+# def get_unique_values_count(df, categorical_columns):
+#     unique_values_count = {}
+    
+#     for col in categorical_columns:
+#         unique_vals = df[col].value_counts()
+#         unique_values_count[col] = unique_vals
+    
+#     return unique_values_count
+
+
 # Function to get unique values and their counts from categorical columns
+import pandas as pd
+
 def get_unique_values_count(df, categorical_columns):
-    unique_values_count = {}
+    result = []
     
     for col in categorical_columns:
-        unique_vals = df[col].value_counts()
-        unique_values_count[col] = unique_vals
+        unique_vals = df[col].value_counts(normalize=True)
+        
+        for value, percentage in unique_vals.items():
+            count = int(df[col].eq(value).sum())
+            
+            result.append({
+                'Column': col,
+                'Unique Value': value,
+                'Count': count,
+                'Percentage': round(percentage * 100, 2)
+            })
     
-    return unique_values_count
+    df_result = pd.DataFrame(result)
+    
+    # Sort by Column and Count descending
+    df_result = df_result.sort_values(['Column', 'Count'], ascending=[True, False])
+    
+    return df_result
+
+def update_gender_based_on_title(df, title_column, gender_column):
+    """
+    Update the Gender column based on the Title column when Gender is 'Not specified'.
+    
+    Parameters:
+    df (pd.DataFrame): Input DataFrame
+    title_column (str): Name of the column containing titles
+    gender_column (str): Name of the column containing genders
+    
+    Returns:
+    pd.DataFrame: Modified DataFrame with updated Gender column
+    """
+    try:
+        # Check if both columns exist in the DataFrame
+        if title_column not in df.columns or gender_column not in df.columns:
+            raise ValueError(f"Both '{title_column}' and '{gender_column}' must exist in the DataFrame.")
+        
+        # Create a dictionary mapping titles to genders
+        title_gender_map = {
+            'Mr': 'Male',
+            'Mrs': 'Female',
+            'Ms': 'Female',
+            'Miss': 'Female'
+        }
+        
+        # Create a mask for rows where Gender is 'Not specified'
+        mask = df[gender_column] == 'Not specified'
+        
+        # Apply the mapping to the masked rows
+        df.loc[mask, gender_column] = df.loc[mask, title_column].map(title_gender_map).fillna(df.loc[mask, gender_column])
+        
+        return df
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
