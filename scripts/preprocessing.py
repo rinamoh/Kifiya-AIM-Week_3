@@ -200,3 +200,38 @@ def update_gender_based_on_title(df, title_column, gender_column):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+
+def update_marital_status_based_on_title(df, title_column, marital_status_column):
+    """
+    Update the MaritalStatus column based on the Title column when MaritalStatus is 'Not specified'.
+    
+    Parameters:
+    df (pd.DataFrame): Input DataFrame
+    title_column (str): Name of the column containing titles
+    marital_status_column (str): Name of the column containing marital statuses
+    
+    Returns:
+    pd.DataFrame: Modified DataFrame with updated MaritalStatus column
+    """
+    try:
+        # Check if both columns exist in the DataFrame
+        if title_column not in df.columns or marital_status_column not in df.columns:
+            raise ValueError(f"Both '{title_column}' and '{marital_status_column}' must exist in the DataFrame.")
+        
+        # Create a dictionary mapping titles to marital statuses
+        title_marital_map = {
+            'Miss': 'Single',
+            'Mrs': 'Married'
+        }
+        
+        # Create a mask for rows where MaritalStatus is 'Not specified'
+        mask = df[marital_status_column] == 'Not specified'
+        
+        # Apply the mapping to the masked rows
+        df.loc[mask, marital_status_column] = df.loc[mask, title_column].map(title_marital_map).fillna(df.loc[mask, marital_status_column])
+        
+        return df
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
