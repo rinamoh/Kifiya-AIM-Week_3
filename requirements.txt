@@ -1,0 +1,8 @@
+pandas
+numpy
+scipy
+matplotlib
+seaborn
+scikit-learn (for KMeans clustering)
+plotly (for interactive visualizations)
+dvc
