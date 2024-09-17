@@ -90,6 +90,8 @@ def handle_missing_categorical(df, columns, fill_value='Unknown'):
             print(f"Missing values in categorical column '{column}' filled with '{fill_value}'")
     return df
 
+
+
 def fix_outlier(df, columns):
     
     for column in columns:
